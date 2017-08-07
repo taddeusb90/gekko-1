@@ -44,6 +44,7 @@ Trader.prototype.retry = function(method, args) {
 }
 
 Trader.prototype.getPortfolio = function(callback) {
+  var args = _.toArray(arguments);
   this.bitfinex.wallet_balances(function (err, data, body) {
 
     if(err && err.message === '401') {
@@ -51,6 +52,9 @@ Trader.prototype.getPortfolio = function(callback) {
       e += 'Double check whether your API key is correct.';
       util.die(e);
     }
+    
+    if(err || !data)
+      return this.retry(this.getPortfolio, args);
 
     // We are only interested in funds in the "exchange" wallet
     data = data.filter(c => c.type === 'exchange');
@@ -217,7 +221,8 @@ Trader.getCapabilities = function () {
         { pair: ['BTC', 'ETH'], minimalOrder: { amount: 0.01, unit: 'asset' } },
     ],
     requires: ['key', 'secret'],
-    tid: 'tid'
+    tid: 'tid',
+    tradable: true
   };
 }
 
