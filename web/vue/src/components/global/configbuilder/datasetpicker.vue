@@ -41,6 +41,19 @@ div
       div
         label(for='customTo') To:
         input(v-model='customTo', type='datetime-local')
+      div
+        label(for='candleSize') Preview Candle Size:
+        .grd-row
+          .grd-row-col-3-6
+            input(v-model='importCandleSize')
+          .grd-row-col-3-6.align
+            .custom-select.button
+              select(v-model='importCandleSizeUnit')
+                option minutes
+                option hours
+                option days
+      div
+        a.w100--s.my1.btn--blue(href='#', v-on:click.prevent='showData') Show Data
 
 </template>
 
@@ -63,6 +76,8 @@ export default {
       customTo: false,
       customFrom: false,
       rangeVisible: false,
+      importCandleSize: 1,
+      importCandleSizeUnit: 'hours',
       set: false
     };
   },
@@ -72,9 +87,18 @@ export default {
       return window.humanizeDuration(n, {largest: 4});
     },
     fmt: mom => mom.utc().format('YYYY-MM-DDTHH:mm'),
+    candleSize: function() {
+      const candleSizeValue = parseInt(this.importCandleSize, 10)
+      if(this.importCandleSizeUnit === 'minutes')
+        return candleSizeValue;
+      else if(this.importCandleSizeUnit === 'hours')
+        return candleSizeValue * 60;
+      else if(this.importCandleSizeUnit === 'days')
+        return candleSizeValue * 60 * 24;
+    },
     openRange: function() {
       if(this.setIndex === -1)
-        return alert('select a range first');
+        return alert('select a dataset first');
 
       this.updateCustomRange();
 
@@ -83,6 +107,9 @@ export default {
     updateCustomRange: function() {
       this.customTo = this.fmt(this.set.to);
       this.customFrom = this.fmt(this.set.from);
+    },
+    showData: function() {
+      this.$emit('showdata', this.set);
     },
     emitSet: function(val) {
       if(!val)
@@ -98,6 +125,7 @@ export default {
         set.from = moment.utc(this.customFrom, 'YYYY-MM-DDTHH:mm').format();
       }
 
+      set.candleSize = this.candleSize();
       this.$emit('dataset', set);
     }
   },
@@ -112,7 +140,9 @@ export default {
     },
 
     customTo: function() { this.emitSet(this.set); },
-    customFrom: function() { this.emitSet(this.set); }
+    customFrom: function() { this.emitSet(this.set); },
+    importCandleSize: function() { this.emitSet(this.set); },
+    importCandleSizeUnit: function() { this.emitSet(this.set); }
   }
 }
 </script>

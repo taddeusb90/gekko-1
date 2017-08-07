@@ -1,7 +1,12 @@
 <template lang='jade'>
 .contain
-  dataset-picker.contain.my2(v-on:dataset='updateDataset')
+  dataset-picker.contain.my2(v-on:dataset='updateDataset', v-on:showdata='showData')
   .hr
+  div(v-if='candleFetch')
+    div(v-if='candleFetch === "fetching"')
+      div Fetching data...
+    chart.contain.my2(v-if='candleFetch === "fetched"', :candles='candles')
+    .hr
   strat-picker.contain.my2(v-on:stratConfig='updateStrat')
   .hr
   paper-trader(v-on:settings='updatePaperTrader')
@@ -11,10 +16,11 @@
 <script>
 
 import datasetPicker from '../global/configbuilder/datasetpicker.vue'
+import chart from '../global/configbuilder/chart.vue'
 import stratPicker from '../global/configbuilder/stratpicker.vue'
 import paperTrader from '../global/configbuilder/papertrader.vue'
 import _ from 'lodash'
-import { get } from '../../tools/ajax'
+import { get, post } from '../../tools/ajax'
 
 export default {
   created: function() {
@@ -28,13 +34,16 @@ export default {
       dataset: {},
       strat: {},
       paperTrader: {},
-      performanceAnalyzer: {}
+      performanceAnalyzer: {},
+      candleFetch: null,
+      candles: []
     }
   },
   components: {
     stratPicker,
     datasetPicker,
-    paperTrader
+    paperTrader,
+    chart
   },
   computed: {
     market: function() {
@@ -79,6 +88,7 @@ export default {
     }
   },
   methods: {
+    fmt: mom => moment.utc(mom).format('YYYY-MM-DD HH:mm'),
     validConfig: function(config) {
       if(!config.backtest)
         return false;
@@ -112,15 +122,59 @@ export default {
       this.dataset = set;
       this.$emit('config', this.config);
     },
+
     updateStrat: function(sc) {
       this.strat = sc;
       this.$emit('config', this.config);
     },
+
     updatePaperTrader: function(pt) {
       this.paperTrader = pt;
       this.paperTrader.enabled = true;
       this.$emit('config', this.config);
     },
+
+    showData: function() {
+      // Fetch dataset and redraw chart
+      this.getCandles();
+    },
+
+    getCandles: function() {
+      this.candleFetch = 'fetching';
+
+      let from = this.fmt(this.dataset.from);
+      let to = this.fmt(this.dataset.to);
+      let candleSize = this.dataset.candleSize;
+
+      let config = {
+          watch: {
+            exchange: this.dataset.exchange,
+            currency: this.dataset.currency,
+            asset: this.dataset.asset
+          },
+          daterange: {
+            to, from
+          },
+          candleSize
+        };
+
+      console.log('getCandles config:', config)
+      post('getCandles', config, (err, res) => {
+        this.candleFetch = 'fetched';
+        // // todo
+        if(!res || res.error || !_.isArray(res)) {
+          console.log('getCandles api error:', res);
+          return;
+        }
+
+        console.log('candles received:', res)
+        this.candles = res.map(c => {
+          c.timestampMs = c.start * 1000
+          c.start = moment.unix(c.start).utc().format();
+          return c;
+        });
+      })
+    }
   }
 }
 </script>
