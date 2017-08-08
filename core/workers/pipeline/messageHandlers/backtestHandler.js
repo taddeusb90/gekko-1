@@ -10,6 +10,7 @@ module.exports = done => {
   var candles = [];
   var report = false;
   var indicatorResults = {};
+  var strategyResults = {};
 
   return {
     message: message => {
@@ -43,6 +44,18 @@ module.exports = done => {
           result: message.indicatorResult.result,
           date: message.indicatorResult.date
         });
+
+      } else if(message.type === 'strategyResult') {
+        if(!_.has(strategyResults, message.strategyResult.name)) {
+          strategyResults[message.strategyResult.name] = {
+            data: []
+          };
+        }
+
+        strategyResults[message.strategyResult.name].data.push({
+          result: message.strategyResult.result,
+          date: message.strategyResult.date
+        });
       }
     },
     exit: status => {
@@ -54,7 +67,8 @@ module.exports = done => {
           candles,
           report,
           roundtrips,
-          indicatorResults
+          indicatorResults,
+          strategyResults
         });
     }
   }

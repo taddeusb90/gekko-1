@@ -244,10 +244,19 @@ Base.prototype.propogateTick = function(candle) {
   this.processedTicks++;
 
  // emit for UI
+  if (this.tickResult) {
+    cp.strategyResult({
+      name: this.name,
+      date: candle.start,
+      result: this.tickResult
+    });
+  }
+
   _.each(this.indicators, (indicator, name) => {
     cp.indicatorResult({
       name,
       type: indicator.type,
+      talib: false,
       date: candle.start,
       result: indicator.result
     });

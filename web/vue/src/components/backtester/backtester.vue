@@ -48,6 +48,7 @@ export default {
         data: {
           candleProps: ['close', 'start'],
           indicatorResults: true,
+          strategyResults: true,
           report: true,
           roundtrips: true,
           trades: true

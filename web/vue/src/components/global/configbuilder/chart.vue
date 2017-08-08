@@ -16,6 +16,7 @@ import _ from 'lodash'
 import Vue from 'vue'
 import * as Highcharts from 'highcharts/highstock'
 
+console.log(Highcharts.getOptions().colors)
 // import { post } from '../../../tools/ajax'
 // import spinner from '../../global/blockSpinner.vue'
 // import dataset from '../../global/mixins/dataset'
@@ -70,6 +71,41 @@ export default {
       },
       rangeSelector: {
         selected: 1
+      },
+
+      rangeSelector: {
+          allButtonsEnabled: true,
+          buttons: [{
+              type: 'day',
+              count: 1,
+              text: '1d'
+          }, {
+              type: 'week',
+              count: 1,
+              text: '7d'
+          }, {
+              type: 'month',
+              count: 1,
+              text: '1m'
+          }, {
+              type: 'month',
+              count: 3,
+              text: '3m'
+          }, {
+              type: 'year',
+              count: 1,
+              text: '1y'
+          }, {
+              type: 'ytd',
+              count: 1,
+              text: 'YTD'
+          }, {
+              type: 'all',
+              text: 'ALL'
+          }],
+          selected: 6,
+          inputEnabled: true,
+          enabled: true
       },
       title: {
         // text: `${this.dataset.asset}-${this.dataset.currency} Trades`

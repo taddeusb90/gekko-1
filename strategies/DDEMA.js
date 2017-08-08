@@ -12,9 +12,14 @@ var method = {};
 // prepare everything our method needs
 method.init = function() {
   this.name = 'DDEMA';
+//   this.tickResultAxis =
+
+  this.tickResult = null;
 
   this.currentTrend;
   this.lastBuySellStatus = 'sell';
+  this.lastBuyDiff = 0.0;
+
   this.dpCount = 0;
   this.requiredHistory = config.tradingAdvisor.historySize;
 
@@ -60,13 +65,15 @@ method.check = function(candle) {
 
   var price = candle.close;
   const diff = 100 * (short - long) / ((short + long) / 2)
+  this.tickResult = diff;
 //   console.log(`short=${short}, long=${long}, price=${price}, diff=${diff}, cnt=${this.dpCount}`)
 
   var message = '@ ' + price.toFixed(8) + ' (' + diff.toFixed(5) + ')';
 
-  if (diff > 0.2 && this.lastBuySellStatus !== 'buy') {
+  if (diff > 0.2 && (this.lastBuySellStatus !== 'buy' || diff > this.lastBuyDiff)) {
     console.log('buy', price, `short=${short}, long=${long}, diff=${diff}`)
     this.lastBuySellStatus = 'buy'
+    this.lastBuyDiff = diff
     console.log('BUY')
     this.advice('long');
     return;

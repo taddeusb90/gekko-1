@@ -12,6 +12,16 @@ import * as Highcharts from 'highcharts/highstock'
 // import { post } from '../../../tools/ajax'
 // import spinner from '../../global/blockSpinner.vue'
 // import dataset from '../../global/mixins/dataset'
+const colors = ["#7cb5ec", "#90ed7d", "#f7a35c", "#e4d354", "#2b908f", "#f45b5b", "#91e8e1", "#8085e9", "#f15c80"];
+
+const indicatorResultMapFunctions = {
+  MACD: (res) => [moment(res.date).unix() * 1000, res.result],
+  'talib-dema': (res) => [moment(res.date).unix() * 1000, res.result.outReal],
+}
+
+const strategyResultMapFunctions = {
+  DDEMA: (res) => [moment(res.date).unix() * 1000, res.result]
+}
 
 export default {
   props: ['result'],
@@ -35,7 +45,9 @@ export default {
     const chartOptions = {
       chart: {
         renderTo: 'resultHighchart',
-        zoomType: 'x'
+        zoomType: 'x',
+        height: 520,
+        ignoreHiddenSeries: true
       },
       rangeSelector: {
         selected: 1
@@ -43,27 +55,84 @@ export default {
       title: {
         // text: `${this.dataset.asset}-${this.dataset.currency} Trades`
       },
+      legend: {
+          enabled: true,
+          align: 'center',
+          backgroundColor: '#FFFFFF',
+          borderColor: 'black',
+          borderWidth: 0,
+          layout: 'horizontal',
+          verticalAlign: 'bottom',
+          y: 0,
+          shadow: false,
+          floating: false
+      },
+
+      rangeSelector: {
+          allButtonsEnabled: true,
+          buttons: [{
+              type: 'day',
+              count: 1,
+              text: '1d'
+          }, {
+              type: 'week',
+              count: 1,
+              text: '7d'
+          }, {
+              type: 'month',
+              count: 1,
+              text: '1m'
+          }, {
+              type: 'month',
+              count: 3,
+              text: '3m'
+          }, {
+              type: 'year',
+              count: 1,
+              text: '1y'
+          }, {
+              type: 'ytd',
+              count: 1,
+              text: 'YTD'
+          }, {
+              type: 'all',
+              text: 'ALL'
+          }],
+          selected: 6,
+          inputEnabled: true,
+          enabled: true
+      },
+
       yAxis: [{ // Primary yAxis
         opposite: false,
         title: {
           text: `${this.result.report.asset}-${this.result.report.currency} Trades`,
           style: {
-            color: Highcharts.getOptions().colors[0]
+            color: colors[0]
           }
         }
       }],
+
       series: [{
         name: `${this.result.report.asset}-${this.result.report.currency}`,
         id: 'trades',
         data: this.result.candles.map((candle) => [moment(candle.start).unix() * 1000, candle.close]),
-        color: Highcharts.getOptions().colors[0],
+        color: colors[0],
+        lineWidth: 3,
         tooltip: {
           valueDecimals: 2
         }
       }],
+
       plotOptions: {
         series: {
-          animation: false
+          animation: false,
+          states: {
+            hover: {
+              // lineWidth: 1,
+              // lineWidthPlus: 1
+            }
+          }
         //   marker: {
         //     enabled: true
         //   }
@@ -71,24 +140,20 @@ export default {
       }
     }
 
-    const indicatorMapFunctions = {
-      MACD: (res) => [moment(res.date).unix() * 1000, res.result],
-      'talib-dema': (res) => [moment(res.date).unix() * 1000, res.result.outReal],
-    }
-
+    // Add indicator results to chart
     for (let name in this.result.indicatorResults) {
       const indicator = this.result.indicatorResults[name]
       const indicatorType = indicator.talib ? `talib-${indicator.type}` : indicator.type;
 
       console.log('add indicator result for', name, indicator)
-      if (!indicatorMapFunctions.hasOwnProperty(indicatorType)) {
+      if (!indicatorResultMapFunctions.hasOwnProperty(indicatorType)) {
         console.log('- no map function found for indicator type', indicatorType);
         continue;
       }
 
       let displayName = name + (indicator.talib ? ` (talib ${indicator.type})` : ` (${indicator.type})`)
 
-      const color = Highcharts.getOptions().colors[chartOptions.yAxis.length];
+      const color = colors[chartOptions.yAxis.length];
       const yAxisId = `y${chartOptions.yAxis.length}`;
       const seriesId = `s${chartOptions.yAxis.length}`;
 
@@ -109,7 +174,39 @@ export default {
       chartOptions.series.push({
         name: displayName,
         id: seriesId,
-        data: indicator.data.map(indicatorMapFunctions[indicatorType]),
+        data: indicator.data.map(indicatorResultMapFunctions[indicatorType]),
+        yAxis: yAxisId,
+        lineWidth: 1,
+        color: color,
+        tooltip: {
+          valueDecimals: 3
+        }
+      })
+    }
+
+    // Add strategy results to chart
+    for (let name in this.result.strategyResults) {
+      const displayName = `${name} strategy result`;
+      const color = colors[chartOptions.yAxis.length];
+      const yAxisId = `y${chartOptions.yAxis.length}`;
+      const seriesId = `s${chartOptions.yAxis.length}`;
+
+      chartOptions.yAxis.push({
+        id: yAxisId,
+        gridLineWidth: 0,
+        opposite: true,
+        title: {
+          text: displayName,
+          style: {
+            color: color
+          }
+        }
+      })
+
+      chartOptions.series.push({
+        name: displayName,
+        id: seriesId,
+        data: this.result.strategyResults[name].data.map(strategyResultMapFunctions[name]),
         yAxis: yAxisId,
         lineWidth: 1,
         color: color,
