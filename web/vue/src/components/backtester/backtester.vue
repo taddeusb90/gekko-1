@@ -25,6 +25,7 @@ import configBuilder from './backtestConfigBuilder.vue'
 import chart from '../global/configbuilder/chart.vue'
 
 import result from './result/result.vue'
+
 import { post } from '../../tools/ajax'
 import spinner from '../global/blockSpinner.vue'
 
