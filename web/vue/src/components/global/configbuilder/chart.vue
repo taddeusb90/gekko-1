@@ -1,7 +1,14 @@
 <template lang='jade'>
 div
   h3 Chart
+  p {{ candles.length }} data points
   div#highchart
+  center
+    div
+      button(v-on:click='useHighchartTimerange') Use selected timerange
+      button(v-on:click='resetHighchartTimerange') Reset
+    span(v-if='customTimerange.fromTimestampMs') {{ humanizeTimestamp(customTimerange.fromTimestampMs) }} →&nbsp;
+    span(v-if='customTimerange.toTimestampMs') {{ humanizeTimestamp(customTimerange.toTimestampMs) }}
 </template>
 
 <script>
@@ -15,13 +22,17 @@ import * as Highcharts from 'highcharts/highstock'
 // import dataset from '../../global/mixins/dataset'
 
 export default {
-  props: ['candles'],
+  props: ['candles', 'dataset'],
   components: {
     // spinner
   },
   data: () => {
     return {
-      chart: null
+      chart: null,
+      customTimerange: {
+        fromTimestampMs: null,
+        toTimestampMs: null
+      }
       // setIndex: -1,
       // customTo: false,
       // customFrom: false,
@@ -36,7 +47,20 @@ export default {
     // humanizeDuration: (n) => {
     //   return window.humanizeDuration(n, {largest: 4});
     // },
-    // fmt: mom => mom.utc().format('YYYY-MM-DDTHH:mm'),
+    humanizeTimestamp: timestamp => moment.utc(timestamp).format('YYYY-MM-DD HH:mm'),
+    useHighchartTimerange: function() {
+      const fromTimestampMs = parseInt(this.chart.xAxis[0].min, 10)
+      const toTimestampMs = parseInt(this.chart.xAxis[0].max, 10)
+      this.customTimerange = { fromTimestampMs, toTimestampMs }
+      this.$emit('useCustomTimerange', { fromTimestampMs, toTimestampMs })
+    },
+    resetHighchartTimerange: function() {
+      this.customTimerange = {
+        fromTimestampMs: null,
+        toTimestampMs: null
+      }
+      this.$emit('resetCustomTimerange')
+    }
   },
   mounted () {
     console.log('charts mounted')
@@ -49,19 +73,19 @@ export default {
         selected: 1
       },
       title: {
-        text: `Trades`
+        // text: `${this.dataset.asset}-${this.dataset.currency} Trades`
       },
       yAxis: [{ // Primary yAxis
         opposite: false,
         title: {
-          text: 'Trade',
+          text: `${this.dataset.asset}-${this.dataset.currency} Trades`,
           style: {
             color: Highcharts.getOptions().colors[0]
           }
         }
       }],
       series: [{
-        name: `Trade`,
+        name: `${this.dataset.asset}-${this.dataset.currency}`,
         id: 'trades',
         data: this.candles.map((candle) => [candle.timestampMs, candle.open]),
         color: Highcharts.getOptions().colors[0],

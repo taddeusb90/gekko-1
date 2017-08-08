@@ -42,7 +42,7 @@ div
         label(for='customTo') To:
         input(v-model='customTo', type='datetime-local')
       div
-        label(for='candleSize') Preview Candle Size:
+        label(for='candleSize') Candle Size:
         .grd-row
           .grd-row-col-3-6
             input(v-model='importCandleSize')
@@ -53,7 +53,7 @@ div
                 option hours
                 option days
       div
-        a.w100--s.my1.btn--blue(href='#', v-on:click.prevent='showData') Show Data
+        a.w100--s.my1.btn--blue(href='#highchart', v-on:click='showData') Show Data
 
 </template>
 

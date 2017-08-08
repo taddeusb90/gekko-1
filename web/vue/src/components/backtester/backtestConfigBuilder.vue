@@ -2,12 +2,7 @@
 .contain
   dataset-picker.contain.my2(v-on:dataset='updateDataset', v-on:showdata='showData')
   .hr
-  div(v-if='candleFetch')
-    div(v-if='candleFetch === "fetching"')
-      div Fetching data...
-    chart.contain.my2(v-if='candleFetch === "fetched"', :candles='candles')
-    .hr
-  strat-picker.contain.my2(v-on:stratConfig='updateStrat')
+  strat-picker.contain.my2(v-on:stratConfig='updateStrat', :candleSize='candleSize')
   .hr
   paper-trader(v-on:settings='updatePaperTrader')
   .hr
@@ -16,7 +11,6 @@
 <script>
 
 import datasetPicker from '../global/configbuilder/datasetpicker.vue'
-import chart from '../global/configbuilder/chart.vue'
 import stratPicker from '../global/configbuilder/stratpicker.vue'
 import paperTrader from '../global/configbuilder/papertrader.vue'
 import _ from 'lodash'
@@ -34,18 +28,22 @@ export default {
       dataset: {},
       strat: {},
       paperTrader: {},
-      performanceAnalyzer: {},
-      candleFetch: null,
-      candles: []
+      performanceAnalyzer: {}
     }
   },
   components: {
     stratPicker,
     datasetPicker,
-    paperTrader,
-    chart
+    paperTrader
   },
   computed: {
+    candleSize: () => {
+      if (this.strat && this.strat.tradingAdvisor) {
+        return this.strat.tradingAdvisor.candleSize;
+      } else {
+        return 60;
+      }
+    },
     market: function() {
       if(!this.dataset.exchange)
         return {};
@@ -77,7 +75,8 @@ export default {
             daterange: this.range
           }
         },
-        { performanceAnalyzer: this.performanceAnalyzer }
+        { performanceAnalyzer: this.performanceAnalyzer },
+        { dataset: this.dataset }
       );
 
       console.log(config);
@@ -120,6 +119,7 @@ export default {
     },
     updateDataset: function(set) {
       this.dataset = set;
+      this.strat.tradingAdvisor.candleSize = this.dataset.candleSize
       this.$emit('config', this.config);
     },
 
@@ -135,45 +135,9 @@ export default {
     },
 
     showData: function() {
+      this.strat.tradingAdvisor.candleSize = this.dataset.candleSize
       // Fetch dataset and redraw chart
-      this.getCandles();
-    },
-
-    getCandles: function() {
-      this.candleFetch = 'fetching';
-
-      let from = this.fmt(this.dataset.from);
-      let to = this.fmt(this.dataset.to);
-      let candleSize = this.dataset.candleSize;
-
-      let config = {
-          watch: {
-            exchange: this.dataset.exchange,
-            currency: this.dataset.currency,
-            asset: this.dataset.asset
-          },
-          daterange: {
-            to, from
-          },
-          candleSize
-        };
-
-      console.log('getCandles config:', config)
-      post('getCandles', config, (err, res) => {
-        this.candleFetch = 'fetched';
-        // // todo
-        if(!res || res.error || !_.isArray(res)) {
-          console.log('getCandles api error:', res);
-          return;
-        }
-
-        console.log('candles received:', res)
-        this.candles = res.map(c => {
-          c.timestampMs = c.start * 1000
-          c.start = moment.unix(c.start).utc().format();
-          return c;
-        });
-      })
+      this.$emit('previewCandles');
     }
   }
 }
