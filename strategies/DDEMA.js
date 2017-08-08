@@ -32,7 +32,7 @@ method.init = function() {
 // what happens on every new candle?
 method.update = function(candle) {
   this.dpCount += 1;
-  console.log('dpCount', this.dpCount)
+//   console.log('dpCount', this.dpCount)
 }
 
 // for debugging purposes: log the last calculated EMAs and diff.

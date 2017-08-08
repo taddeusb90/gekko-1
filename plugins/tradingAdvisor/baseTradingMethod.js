@@ -3,6 +3,7 @@ var util = require('../../core/util');
 var config = util.getConfig();
 var dirs = util.dirs();
 var log = require(dirs.core + 'log');
+var cp = require(dirs.core + 'cp');
 
 var ENV = util.gekkoEnv();
 var mode = util.gekkoMode();
@@ -242,6 +243,27 @@ Base.prototype.propogateTick = function(candle) {
   }
   this.processedTicks++;
 
+ // emit for UI
+  _.each(this.indicators, (indicator, name) => {
+    cp.indicatorResult({
+      name,
+      type: indicator.type,
+      date: candle.start,
+      result: indicator.result
+    });
+  })
+
+  _.each(this.talibIndicators, (talibIndicator, name) => {
+    // console.log('talibIndicator', talibIndicator)
+    cp.indicatorResult({
+      name,
+      talib: true,
+      type: talibIndicator.type,
+      date: candle.start,
+      result: talibIndicator.result
+    });
+  })
+
   if(
     this.asyncTick &&
     this.hasSyncIndicators &&
@@ -269,6 +291,7 @@ Base.prototype.addTalibIndicator = function(name, type, parameters) {
   var basectx = this;
 
   this.talibIndicators[name] = {
+    type,
     run: talib[type].create(parameters),
     result: NaN
   }
@@ -282,6 +305,7 @@ Base.prototype.addIndicator = function(name, type, parameters) {
     util.die('Can only add indicators in the init method!');
 
   this.indicators[name] = new Indicators[type].factory(parameters);
+  this.indicators[name].type = type;
 
   // some indicators need a price stream, others need full candles
   this.indicators[name].input = Indicators[type].input;
