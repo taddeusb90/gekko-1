@@ -33,7 +33,7 @@ div
           td
             label(v-bind:for='set.id') {{ humanizeDuration(set.to.diff(set.from)) }}
     em
-      a(href='#', v-on:click.prevent='openRange', v-if='!rangeVisible') Adjust range
+      // a(href='#', v-on:click.prevent='openRange', v-if='!rangeVisible') Adjust range
     template(v-if='rangeVisible')
       div
         label(for='customFrom') From:
@@ -135,7 +135,7 @@ export default {
       this.set = this.datasets[this.setIndex];
 
       this.updateCustomRange();
-
+      this.openRange();
       this.emitSet(this.set);
     },
 
@@ -143,6 +143,9 @@ export default {
     customFrom: function() { this.emitSet(this.set); },
     importCandleSize: function() { this.emitSet(this.set); },
     importCandleSizeUnit: function() { this.emitSet(this.set); }
+  },
+  mounted () {
+    this.scan()
   }
 }
 </script>

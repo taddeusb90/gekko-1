@@ -5,10 +5,10 @@
     config-builder(v-on:config='check', v-on:previewCandles='previewCandles')
 
     a(name='highchart')
-    div(v-if='candleFetch')
+    div.contain.my2(v-if='candleFetch')
       div(v-if='candleFetch === "fetching"')
         div Fetching data...
-      chart.contain.my2(v-if='candleFetch === "fetched"', :candles='candles', :dataset='config.dataset', v-on:useCustomTimerange='useCustomTimerange', v-on:resetCustomTimerange='resetCustomTimerange')
+      chart(v-if='candleFetch === "fetched"', :candles='candles', :dataset='config.dataset', v-on:useCustomTimerange='useCustomTimerange', v-on:resetCustomTimerange='resetCustomTimerange')
       .hr
 
     div(v-if='backtestable')
