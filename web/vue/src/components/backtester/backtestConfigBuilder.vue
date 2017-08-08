@@ -1,6 +1,6 @@
 <template lang='jade'>
 .contain
-  dataset-picker.contain.my2(v-on:dataset='updateDataset', v-on:showdata='showData')
+  dataset-picker.contain.my2(v-on:dataset='updateDataset')
   .hr
   strat-picker.contain.my2(v-on:stratConfig='updateStrat', :candleSize='candleSize')
   .hr
@@ -28,7 +28,7 @@ export default {
       dataset: {},
       strat: {},
       paperTrader: {},
-      performanceAnalyzer: {}
+      performanceAnalyzer: {},
     }
   },
   components: {
@@ -37,12 +37,11 @@ export default {
     paperTrader
   },
   computed: {
-    candleSize: () => {
-      if (this.strat && this.strat.tradingAdvisor) {
-        return this.strat.tradingAdvisor.candleSize;
-      } else {
-        return 60;
-      }
+    candleSize: function() {
+      if (!this.strat.tradingAdvisor)
+        return 0;
+
+      return this.strat.tradingAdvisor.candleSize;
     },
     market: function() {
       if(!this.dataset.exchange)
@@ -117,6 +116,7 @@ export default {
 
       return true;
     },
+
     updateDataset: function(set) {
       this.dataset = set;
       this.strat.tradingAdvisor.candleSize = this.dataset.candleSize
@@ -132,12 +132,6 @@ export default {
       this.paperTrader = pt;
       this.paperTrader.enabled = true;
       this.$emit('config', this.config);
-    },
-
-    showData: function() {
-      this.strat.tradingAdvisor.candleSize = this.dataset.candleSize
-      // Fetch dataset and redraw chart
-      this.$emit('previewCandles');
     }
   }
 }

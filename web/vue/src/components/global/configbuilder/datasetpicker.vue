@@ -53,7 +53,13 @@ div
                 option hours
                 option days
       div
-        a.w100--s.my1.btn--blue(href='#highchart', v-on:click='showData') Show Data
+        a.w100--s.my1.btn--blue(href='#', v-on:click='showData') Show Data
+
+    a(name='highchart')
+    div.contain.my1(v-if='candleFetch')
+      div(v-if='candleFetch === "fetching"')
+        div Fetching data...
+      chart(v-if='candleFetch === "fetched"', :candles='candles', :dataset='set', v-on:useCustomTimerange='useCustomTimerange', v-on:resetCustomTimerange='resetCustomTimerange')
 
 </template>
 
@@ -65,10 +71,12 @@ import Vue from 'vue'
 import { post } from '../../../tools/ajax'
 import spinner from '../../global/blockSpinner.vue'
 import dataset from '../../global/mixins/dataset'
+import chart from '../../global/configbuilder/chart.vue'
 
 export default {
   components: {
-    spinner
+    spinner,
+    chart
   },
   data: () => {
     return {
@@ -78,7 +86,14 @@ export default {
       rangeVisible: false,
       importCandleSize: 1,
       importCandleSizeUnit: 'hours',
-      set: false
+      set: false,
+
+      // timerange set by selection in chart
+      customTimerange: {},
+
+      // data preview
+      candleFetch: null,
+      candles: []
     };
   },
   mixins: [ dataset ],
@@ -108,25 +123,81 @@ export default {
       this.customTo = this.fmt(this.set.to);
       this.customFrom = this.fmt(this.set.from);
     },
-    showData: function() {
-      this.$emit('showdata', this.set);
-    },
+
     emitSet: function(val) {
       if(!val)
         return;
 
-      let set;
+      let set = Vue.util.extend({}, val);
 
-      if(!this.customTo)
-        set = val;
-      else {
-        set = Vue.util.extend({}, val);
+      // The intitial import timerange
+      if (this.customTo) {
         set.to = moment.utc(this.customTo, 'YYYY-MM-DDTHH:mm').format();
+      }
+      if (this.customFrom) {
         set.from = moment.utc(this.customFrom, 'YYYY-MM-DDTHH:mm').format();
+      }
+
+      // Overwrite timerange with selection from chart
+      if (this.customTimerange.toTimestampMs) {
+        set.to = moment.utc(this.customTimerange.toTimestampMs).format();
+      }
+      if (this.customTimerange.fromTimestampMs) {
+        set.from = moment.utc(this.customTimerange.fromTimestampMs).format();
       }
 
       set.candleSize = this.candleSize();
       this.$emit('dataset', set);
+    },
+
+    useCustomTimerange: function(timerange) {
+      console.log('useCustomTimerange', timerange);
+      this.customTimerange = timerange
+      this.emitSet(this.set);
+    },
+
+    resetCustomTimerange: function() {
+      console.log('resetCustomTimerange')
+      this.customTimerange = {}
+      this.emitSet(this.set);
+    },
+
+    // Showdata downloads the current candles and updates the chart
+    showData: function() {
+      this.candleFetch = 'fetching';
+
+      let from = this.fmt(this.set.from);
+      let to = this.fmt(this.set.to);
+      let candleSize = this.candleSize();
+
+      let config = {
+          watch: {
+            exchange: this.set.exchange,
+            currency: this.set.currency,
+            asset: this.set.asset
+          },
+          daterange: {
+            to, from
+          },
+          candleSize
+        };
+
+      console.log('getCandles config:', config)
+      post('getCandles', config, (err, res) => {
+        this.candleFetch = 'fetched';
+        // // todo
+        if(!res || res.error || !_.isArray(res)) {
+          console.log('getCandles api error:', res);
+          return;
+        }
+
+        console.log('candles received:', res)
+        this.candles = res.map(c => {
+          c.timestampMs = c.start * 1000
+          c.start = moment.unix(c.start).utc().format();
+          return c;
+        });
+      })
     }
   },
   watch: {

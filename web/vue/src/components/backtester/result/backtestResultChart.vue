@@ -1,6 +1,5 @@
 <template lang='jade'>
 div
-  h3 Backtest Result Chart
   div#resultHighchart
 </template>
 

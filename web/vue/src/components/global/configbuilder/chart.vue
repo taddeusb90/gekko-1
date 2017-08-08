@@ -1,6 +1,5 @@
 <template lang='jade'>
 div
-  h3 Chart
   p {{ candles.length }} data points
   div#highchart
   center
