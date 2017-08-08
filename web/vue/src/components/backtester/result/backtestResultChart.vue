@@ -71,9 +71,21 @@ export default {
       }
     }
 
+    const indicatorMapFunctions = {
+      MACD: (res) => [moment(res.date).unix() * 1000, res.result],
+      'talib-dema': (res) => [moment(res.date).unix() * 1000, res.result.outReal],
+    }
+
     for (let name in this.result.indicatorResults) {
       const indicator = this.result.indicatorResults[name]
+      const indicatorType = indicator.talib ? `talib-${indicator.type}` : indicator.type;
+
       console.log('add indicator result for', name, indicator)
+      if (!indicatorMapFunctions.hasOwnProperty(indicatorType)) {
+        console.log('- no map function found for indicator type', indicatorType);
+        continue;
+      }
+
       let displayName = name + (indicator.talib ? ` (talib ${indicator.type})` : ` (${indicator.type})`)
 
       const color = Highcharts.getOptions().colors[chartOptions.yAxis.length];
@@ -93,11 +105,11 @@ export default {
         }
       })
 
-      // Add Series
+      // Add Indicator Series
       chartOptions.series.push({
         name: displayName,
         id: seriesId,
-        data: indicator.data.map((res) => [moment(res.date).unix() * 1000, res.result]),
+        data: indicator.data.map(indicatorMapFunctions[indicatorType]),
         yAxis: yAxisId,
         lineWidth: 1,
         color: color,
