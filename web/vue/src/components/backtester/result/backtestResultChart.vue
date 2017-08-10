@@ -16,7 +16,22 @@ const colors = ["#7cb5ec", "#90ed7d", "#f7a35c", "#e4d354", "#2b908f", "#f45b5b"
 
 const indicatorResultMapFunctions = {
   MACD: (res) => [moment(res.date).unix() * 1000, res.result],
+  DEMA: (res) => [moment(res.date).unix() * 1000, res.result],
   'talib-dema': (res) => [moment(res.date).unix() * 1000, res.result.outReal],
+  default: (res) => [moment(res.date).unix() * 1000, res.result]
+}
+
+const indicatorResultYAxis = {
+  default: 'default',
+  DEMA: 'secondary'
+}
+
+function getIndicatorResultMapFunction(indicatorType) {
+  if (indicatorResultMapFunctions.hasOwnProperty(indicatorType)) {
+    return indicatorResultMapFunctions[indicatorType];
+  } else {
+    return indicatorResultMapFunctions.default;
+  }
 }
 
 const strategyResultMapFunctions = {
@@ -46,7 +61,7 @@ export default {
       chart: {
         renderTo: 'resultHighchart',
         zoomType: 'x',
-        height: 520,
+        height: 720,
         ignoreHiddenSeries: true
       },
       rangeSelector: {
@@ -105,11 +120,26 @@ export default {
 
       yAxis: [{ // Primary yAxis
         opposite: false,
+        height: '80%',
+        id: 'default',
         title: {
           text: `${this.result.report.asset}-${this.result.report.currency} Trades`,
           style: {
             color: colors[0]
           }
+        }
+      }, {
+        id: 'secondary',
+        gridLineWidth: 0,
+        opposite: false,
+        top: '80%',
+        height: '20%',
+        offset: 2,
+        title: {
+          text: 'secondary',
+          // style: {
+          //   color: color
+          // }
         }
       }],
 
@@ -145,37 +175,36 @@ export default {
       const indicator = this.result.indicatorResults[name]
       const indicatorType = indicator.talib ? `talib-${indicator.type}` : indicator.type;
 
-      console.log('add indicator result for', name, indicator)
-      if (!indicatorResultMapFunctions.hasOwnProperty(indicatorType)) {
-        console.log('- no map function found for indicator type', indicatorType);
-        continue;
-      }
+      console.log(`add indicator result for type ${indicatorType}, name ${name}`)
+      const resultMapFunction = getIndicatorResultMapFunction(indicatorType);
+      const resultYAxis = indicatorResultYAxis[indicatorType] || indicatorResultYAxis.default
 
       let displayName = name + (indicator.talib ? ` (talib ${indicator.type})` : ` (${indicator.type})`)
 
-      const color = colors[chartOptions.yAxis.length];
-      const yAxisId = `y${chartOptions.yAxis.length}`;
-      const seriesId = `s${chartOptions.yAxis.length}`;
+      const color = colors[chartOptions.series.length];
+      // const yAxisId = `y${chartOptions.yAxis.length}`;
+      const seriesId = `s${chartOptions.series.length}`;
 
       // Add yAxis
-      chartOptions.yAxis.push({
-        id: yAxisId,
-        gridLineWidth: 0,
-        opposite: true,
-        title: {
-          text: displayName,
-          style: {
-            color: color
-          }
-        }
-      })
+      // chartOptions.yAxis.push({
+      //   id: yAxisId,
+      //   gridLineWidth: 0,
+      //   opposite: true,
+      //   height: '80%',
+      //   title: {
+      //     text: displayName,
+      //     style: {
+      //       color: color
+      //     }
+      //   }
+      // })
 
       // Add Indicator Series
       chartOptions.series.push({
         name: displayName,
         id: seriesId,
-        data: indicator.data.map(indicatorResultMapFunctions[indicatorType]),
-        yAxis: yAxisId,
+        data: indicator.data.map(resultMapFunction),
+        yAxis: resultYAxis,
         lineWidth: 1,
         color: color,
         tooltip: {
@@ -185,29 +214,35 @@ export default {
     }
 
     // Add strategy results to chart
+    let stratResultSeriesId;
+
     for (let name in this.result.strategyResults) {
       const displayName = `${name} strategy result`;
       const color = colors[chartOptions.yAxis.length];
       const yAxisId = `y${chartOptions.yAxis.length}`;
       const seriesId = `s${chartOptions.yAxis.length}`;
+      stratResultSeriesId = seriesId;
 
-      chartOptions.yAxis.push({
-        id: yAxisId,
-        gridLineWidth: 0,
-        opposite: true,
-        title: {
-          text: displayName,
-          style: {
-            color: color
-          }
-        }
-      })
+      // chartOptions.yAxis.push({
+      //   id: yAxisId,
+      //   gridLineWidth: 0,
+      //   opposite: false,
+      //   top: '80%',
+      //   height: '20%',
+      //   offset: 2,
+      //   title: {
+      //     text: displayName,
+      //     style: {
+      //       color: color
+      //     }
+      //   }
+      // })
 
       chartOptions.series.push({
         name: displayName,
         id: seriesId,
         data: this.result.strategyResults[name].data.map(strategyResultMapFunctions[name]),
-        yAxis: yAxisId,
+        yAxis: 'secondary',
         lineWidth: 1,
         color: color,
         tooltip: {
@@ -230,10 +265,11 @@ export default {
     const flagSeriesId = `f${chartOptions.yAxis.length}`;
     chartOptions.series.push({
       type: 'flags',
+      name: 'Flags',
       id: flagSeriesId,
       data: buySellFlags,
-      // onSeries: stratInstance.highcharts.dataSeriesId,
       onSeries: 'trades',
+      // onSeries: stratResultSeriesId,
       // color: stratInstance.highcharts.color,
       // fillColor: stratInstance.highcharts.color
     })

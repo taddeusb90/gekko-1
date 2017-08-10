@@ -166,8 +166,8 @@ export default {
     showData: function() {
       this.candleFetch = 'fetching';
 
-      let from = this.fmt(this.set.from);
-      let to = this.fmt(this.set.to);
+      let from = this.customFrom;
+      let to = this.customTo;
       let candleSize = this.candleSize();
 
       let config = {
