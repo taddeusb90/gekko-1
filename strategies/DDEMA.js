@@ -54,13 +54,9 @@ method.log = function() {
 method.check = function(candle) {
   var short = this.talibIndicators.demaShort.result.outReal;
   var long = this.talibIndicators.demaLong.result.outReal;
-//   console.log('talib dema result4:', this.talibIndicators.dema4)
-//   console.log('talib dema result4:', result4)
-
-//   const short = _.last(result4)
-//   const long = _.last(result8)
   if (!short || !long) {
-    return
+    this.advice();
+    return;
   }
 
   var price = candle.close;
@@ -70,21 +66,20 @@ method.check = function(candle) {
 
   var message = '@ ' + price.toFixed(8) + ' (' + diff.toFixed(5) + ')';
 
-  if (diff > 0.2 && (this.lastBuySellStatus !== 'buy' || diff > this.lastBuyDiff)) {
-    console.log('buy', price, `short=${short}, long=${long}, diff=${diff}`)
-    this.lastBuySellStatus = 'buy'
-    this.lastBuyDiff = diff
-    console.log('BUY')
+  // if (diff > settings.thresholds.up && (this.lastBuySellStatus !== 'buy')) {
+  if (diff > settings.thresholds.up) {
+    // console.log('buy', price, `short=${short}, long=${long}, diff=${diff}`)
+    // this.lastBuySellStatus = 'buy'
+    // this.lastBuyDiff = diff
+    // console.log('BUY')
     this.advice('long');
     return;
-  } else {
-    if (diff < -0.2 && this.lastBuySellStatus !== 'sell') {
-      console.log('sell', price, `short=${short}, long=${long}, diff=${diff}`)
-      this.lastBuySellStatus = 'sell'
-      console.log('SELL')
-      this.advice('short');
-      return;
-    }
+  } else if (diff < settings.thresholds.down) {
+    // console.log('sell', price, `short=${short}, long=${long}, diff=${diff}`)
+    // this.lastBuySellStatus = 'sell'
+    // console.log('SELL')
+    this.advice('short');
+    return;
   }
 
   this.advice();

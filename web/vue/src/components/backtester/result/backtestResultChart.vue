@@ -13,17 +13,12 @@ import * as Highcharts from 'highcharts/highstock'
 // import spinner from '../../global/blockSpinner.vue'
 // import dataset from '../../global/mixins/dataset'
 const colors = ["#7cb5ec", "#90ed7d", "#f7a35c", "#e4d354", "#2b908f", "#f45b5b", "#91e8e1", "#8085e9", "#f15c80"];
+const YAXIS_PRIMARY = 'primary'
+const YAXIS_SECONDARY = 'secondary'
 
 const indicatorResultMapFunctions = {
-  MACD: (res) => [moment(res.date).unix() * 1000, res.result],
-  DEMA: (res) => [moment(res.date).unix() * 1000, res.result],
   'talib-dema': (res) => [moment(res.date).unix() * 1000, res.result.outReal],
   default: (res) => [moment(res.date).unix() * 1000, res.result]
-}
-
-const indicatorResultYAxis = {
-  default: 'default',
-  DEMA: 'secondary'
 }
 
 function getIndicatorResultMapFunction(indicatorType) {
@@ -33,6 +28,9 @@ function getIndicatorResultMapFunction(indicatorType) {
     return indicatorResultMapFunctions.default;
   }
 }
+
+// Types of indicators which should be drawn on the secondary yAxis
+const secondaryAxisIndicatorTypes = ['DEMA', 'CCI'];
 
 const strategyResultMapFunctions = {
   DDEMA: (res) => [moment(res.date).unix() * 1000, res.result]
@@ -121,7 +119,7 @@ export default {
       yAxis: [{ // Primary yAxis
         opposite: false,
         height: '80%',
-        id: 'default',
+        id: YAXIS_PRIMARY,
         title: {
           text: `${this.result.report.asset}-${this.result.report.currency} Trades`,
           style: {
@@ -129,7 +127,7 @@ export default {
           }
         }
       }, {
-        id: 'secondary',
+        id: YAXIS_SECONDARY,
         gridLineWidth: 0,
         opposite: false,
         top: '80%',
@@ -177,7 +175,8 @@ export default {
 
       console.log(`add indicator result for type ${indicatorType}, name ${name}`)
       const resultMapFunction = getIndicatorResultMapFunction(indicatorType);
-      const resultYAxis = indicatorResultYAxis[indicatorType] || indicatorResultYAxis.default
+      const resultYAxis = secondaryAxisIndicatorTypes.indexOf(indicatorType) > -1 ? YAXIS_SECONDARY : YAXIS_PRIMARY;
+      // indicatorResultYAxis[indicatorType] || indicatorResultYAxis.default
 
       let displayName = name + (indicator.talib ? ` (talib ${indicator.type})` : ` (${indicator.type})`)
 
